@@ -18,35 +18,32 @@ SUB_CACHE = {}
 
 
 # ------------------------------------------------------------
-# JAV CODE EXTRACTION
+# JAV CODE EXTRACTION (FINAL, CORRECT VERSION)
 # ------------------------------------------------------------
 def extract_jav_code(filename):
     """
     Extract JAV codes from messy filenames.
+    Correctly handles:
+    - 2022-07-08 - Meguri Minoshima - ABW-255.mp4
+    - hhd800.com@FJIN-098.mp4
+    - [IPX-123].mp4
+    - IPX_123A.mp4
+    - SSIS-001-C.mp4
     """
 
-    # Try bracketed first: [FJIN-098]
-    m = re.search(
-        r"""
-
-\[([A-Za-z0-9]{2,10}[-_ ]?\d{2,5}[A-Za-z]?)\]
-
-""",
-        filename
-    )
+    # 1. Try bracketed first: [ABW-255]
+    m = re.search(r"\[([A-Za-z]{2,10}[-_]\d{2,5}[A-Za-z]?)\]", filename)
     if m:
-        return m.group(1).replace(" ", "").replace("_", "-")
+        return m.group(1)
 
-    # General pattern: FJIN-098 or FJIN 098 or FJIN_098
-    m = re.search(
-        r"""[A-Za-z0-9]{2,10}[-_ ]?\d{2,5}[A-Za-z]?""",
-        filename
-    )
-    if m:
-        return m.group(0).replace(" ", "").replace("_", "-")
+    # 2. General JAV code pattern (letters only prefix)
+    matches = re.findall(r"[A-Za-z]{2,10}[-_]\d{2,5}[A-Za-z]?", filename)
+
+    if matches:
+        # Return the LAST match — JAV codes are usually at the end
+        return matches[-1]
 
     return None
-
 
 
 # ------------------------------------------------------------
