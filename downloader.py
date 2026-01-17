@@ -174,10 +174,14 @@ def download_subtitle_from_subtitlecat(code):
             logger.warning(f"[SubtitleCat] Failed to download subtitle for {code}")
             return None
 
-        SUB_CACHE[code] = r.content
-        return r.content
+        result = {
+            "bytes": r.content,
+            "title": os.path.basename(page_href),   # best guess title from page
+            "source": final_url
+        }
 
-
+        SUB_CACHE[code] = result
+        return result
 # ------------------------------------------------------------
 # VIDEO SCANNING
 # ------------------------------------------------------------
