@@ -53,7 +53,7 @@ def safe_get(url, retries=3, timeout=10):
     for attempt in range(retries):
         try:
             r = requests.get(url, timeout=timeout)
-            if r.status_code == 200:
+            if r.statuscode == 200:
                 return r
         except Exception:
             pass
@@ -94,14 +94,30 @@ def download_subtitle_from_subtitlecat(code):
         best_href = None
         most_downloads = 0
 
-        # Pick best match
+        def normalize(s):
+            return re.sub(r"[-_ .]", "", s).lower()
+
+        norm_code = normalize(code)
+        prefix = re.match(r"[A-Za-z]+", code).group(0).lower()
+
         for row in rows[:20]:
             a = row.find("a")
             if not a:
                 continue
 
             title = a.text.strip()
-            if code.lower() not in title.lower():
+            href = a.get("href", "")
+
+            norm_title = normalize(title)
+            norm_href = normalize(href)
+
+            # 1. Exact code match
+            exact = norm_code in norm_title or norm_code in norm_href
+
+            # 2. Prefix match (fallback)
+            prefix_match = prefix in norm_title or prefix in norm_href
+
+            if not exact and not prefix_match:
                 continue
 
             cols = row.find_all("td")
@@ -112,32 +128,13 @@ def download_subtitle_from_subtitlecat(code):
 
             if downloads > most_downloads:
                 most_downloads = downloads
-                best_href = a.get("href")
+                best_href = href
 
         if not best_href:
             logger.warning(f"[SubtitleCat] No matching subtitle for {code}")
             return None
 
-        page_url = f"{BASE_URL}/{best_href}"
-        logger.info(f"[SubtitleCat] Best match: {page_url}")
-
-        r = safe_get(page_url)
-        if not r:
-            logger.warning(f"[SubtitleCat] Failed to load subtitle page for {code}")
-            return None
-
-        soup = BeautifulSoup(r.text, "lxml")
-        download_link = soup.find("a", id="download_en")
-        if not download_link:
-            logger.warning(f"[SubtitleCat] No EN subtitle link for {code}")
-            return None
-
-        href = download_link.get("href")
-        if not href:
-            logger.warning(f"[SubtitleCat] Missing href for {code}")
-            return None
-
-        final_url = f"{BASE_URL}{href}"
+        final_url = f"{BASE_URL}{best_href}"
         logger.info(f"[SubtitleCat] Downloading from: {final_url}")
 
         r = safe_get(final_url)
