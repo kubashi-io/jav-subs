@@ -1,0 +1,47 @@
+body {
+    font-family: sans-serif;
+    margin: 20px;
+    background: #fafafa;
+}
+
+h1 {
+    margin-bottom: 20px;
+}
+
+label {
+    display: block;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+.checkbox {
+    font-weight: normal;
+}
+
+input[type="text"],
+input[type="number"] {
+    padding: 6px;
+    width: 400px;
+    margin-top: 4px;
+}
+
+.btn {
+    margin-top: 15px;
+    padding: 8px 16px;
+    background: #0078ff;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+.btn:hover {
+    background: #005fcc;
+}
+
+textarea {
+    width: 100%;
+    height: 400px;
+    margin-top: 10px;
+    font-family: monospace;
+    padding: 10px;
+}
