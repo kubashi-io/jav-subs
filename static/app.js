@@ -11,19 +11,29 @@ scanBtn.onclick = async () => {
     data.videos.forEach((v, index) => {
         const row = document.createElement("tr");
         row.id = "row-" + index;
+        row.classList.add("video-row");
 
         row.innerHTML = `
             <td>${v.file}</td>
             <td>${v.code || "-"}</td>
             <td>${v.has_sub ? "Yes" : "No"}</td>
             <td class="status" id="status-${index}"></td>
-            <td>
-                <button class="logToggle" onclick="toggleLog(${index})">Show Log</button>
-                <div class="log collapsed" id="log-${index}"></div>
+            <td></td>
+        `;
+
+        const logRow = document.createElement("tr");
+        logRow.id = "log-row-" + index;
+        logRow.classList.add("log-row");
+
+        logRow.innerHTML = `
+            <td colspan="5">
+                <div class="log" id="log-${index}"></div>
             </td>
         `;
 
         tableBody.appendChild(row);
+        tableBody.appendChild(logRow);
+
     });
 
     downloadBtn.disabled = false;
