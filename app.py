@@ -9,6 +9,7 @@ from downloader import (
 
 app = Flask(__name__)
 
+# Global status shared with UI
 CURRENT_STATUS = {
     "videos": [],
     "finished": True
@@ -40,7 +41,7 @@ def process_single_video(video):
         video["log"].append("No subtitle found.")
         return False
 
-    # Log metadata
+    # Log metadata from downloader
     if "title" in result:
         video["log"].append(f"Found subtitle: {result['title']}")
     if "source" in result:
@@ -73,7 +74,8 @@ def index():
 def scan():
     global CURRENT_STATUS
 
-    VIDEO_DIR = "/videos"  # update to your real directory
+    # Update this to your real directory
+    VIDEO_DIR = "/videos"
 
     videos = scan_videos(VIDEO_DIR, include_existing=True)
 
