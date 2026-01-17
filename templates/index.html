@@ -11,29 +11,70 @@
     <h1>JAV Subtitle Downloader</h1>
 
     <form method="post" action="{{ url_for('start') }}">
-        <label>Root video folder (inside container):</label>
+        <label>Root video folder:</label>
         <input type="text" name="root_dir" value="{{ root_dir }}" required>
 
         <label>
-            <input type="checkbox" name="multithread" {% if multithread %}checked{% endif %}>
+            <input type="checkbox" name="multithread" checked>
             Use multithreading
         </label>
 
         <label>Max threads:</label>
-        <input type="number" name="max_threads" value="{{ max_threads }}" min="1" max="64">
+        <input type="number" name="max_threads" value="10" min="1" max="64">
+
+        <label>
+            <input type="checkbox" name="test_mode">
+            Test Mode (no files written)
+        </label>
 
         <button class="btn" type="submit">Start Download</button>
+
+        <button class="btn btn-secondary" formaction="{{ url_for('preview') }}">
+            Preview Scan
+        </button>
     </form>
 
-    <h2>Logs</h2>
+    <h2>Status</h2>
+    <div id="status-panel">
+        <p>Total: <span id="s-total">0</span></p>
+        <p>Processed: <span id="s-processed">0</span></p>
+        <p>Downloaded: <span id="s-downloaded">0</span></p>
+        <p>Failed: <span id="s-failed">0</span></p>
+    </div>
 
+    <h2>Logs</h2>
     <form method="get" action="{{ url_for('index') }}">
         <button class="btn btn-secondary" type="submit">Refresh Logs</button>
     </form>
 
     <textarea readonly>{{ logs }}</textarea>
 
+    <footer class="footer">
+        Build: {{ build_sha }}
+    </footer>
+
 </div>
+
+<div id="loading" class="loading hidden">Working...</div>
+
+<script>
+setInterval(() => {
+    fetch("/status")
+        .then(r => r.json())
+        .then(s => {
+            document.getElementById("s-total").textContent = s.total;
+            document.getElementById("s-processed").textContent = s.processed;
+            document.getElementById("s-downloaded").textContent = s.downloaded;
+            document.getElementById("s-failed").textContent = s.failed;
+        });
+}, 1000);
+
+document.querySelectorAll("button").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.getElementById("loading").classList.remove("hidden");
+    });
+});
+</script>
 
 </body>
 </html>
