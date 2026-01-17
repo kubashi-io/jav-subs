@@ -22,8 +22,6 @@ STATUS = {
 
 
 def setup_logging():
-    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True) if os.path.dirname(LOG_FILE) else None
-
     handler = RotatingFileHandler(
         LOG_FILE,
         maxBytes=5 * 1024 * 1024,  # 5 MB
