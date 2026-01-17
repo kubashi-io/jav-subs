@@ -10,7 +10,9 @@
 
     <h1>JAV Subtitle Downloader</h1>
 
+    <!-- MAIN FORM -->
     <form method="post" action="{{ url_for('start') }}">
+
         <label>Root video folder:</label>
         <input type="text" name="root_dir" value="{{ root_dir }}" required>
 
@@ -27,6 +29,11 @@
             Test Mode (no files written)
         </label>
 
+        <label>
+            <input type="checkbox" name="include_existing_subs">
+            Include files that already have subtitles
+        </label>
+
         <button class="btn" type="submit">Start Download</button>
 
         <button class="btn btn-secondary" formaction="{{ url_for('preview') }}">
@@ -34,6 +41,7 @@
         </button>
     </form>
 
+    <!-- STATUS PANEL -->
     <h2>Status</h2>
     <div id="status-panel">
         <p>Total: <span id="s-total">0</span></p>
@@ -42,6 +50,7 @@
         <p>Failed: <span id="s-failed">0</span></p>
     </div>
 
+    <!-- LOGS -->
     <h2>Logs</h2>
     <form method="get" action="{{ url_for('index') }}">
         <button class="btn btn-secondary" type="submit">Refresh Logs</button>
@@ -49,15 +58,18 @@
 
     <textarea readonly>{{ logs }}</textarea>
 
+    <!-- FOOTER -->
     <footer class="footer">
         Build: {{ build_sha }}
     </footer>
 
 </div>
 
+<!-- LOADING OVERLAY -->
 <div id="loading" class="loading hidden">Working...</div>
 
 <script>
+/* STATUS POLLING */
 setInterval(() => {
     fetch("/status")
         .then(r => r.json())
@@ -69,6 +81,7 @@ setInterval(() => {
         });
 }, 1000);
 
+/* BUTTON FEEDBACK */
 document.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
         document.getElementById("loading").classList.remove("hidden");

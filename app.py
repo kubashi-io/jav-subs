@@ -38,7 +38,9 @@ def index():
 @app.route("/preview", methods=["POST"])
 def preview():
     root_dir = request.form.get("root_dir")
-    files = scan_videos(root_dir)
+    include_existing = request.form.get("include_existing_subs") == "on"
+
+    files = scan_videos(root_dir, include_existing=include_existing)
 
     return render_template(
         "preview.html",
@@ -54,6 +56,7 @@ def start():
     multithread = request.form.get("multithread") == "on"
     max_threads = int(request.form.get("max_threads") or 10)
     test_mode = request.form.get("test_mode") == "on"
+    include_existing = request.form.get("include_existing_subs") == "on"
 
     STATUS.update({
         "total": 0,
@@ -69,6 +72,7 @@ def start():
         use_multithreading=multithread,
         max_threads=max_threads,
         test_mode=test_mode,
+        include_existing=include_existing,
         status=STATUS
     )
 
