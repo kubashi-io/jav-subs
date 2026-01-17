@@ -23,30 +23,30 @@ SUB_CACHE = {}
 def extract_jav_code(filename):
     """
     Extract JAV codes from messy filenames.
-    Supports:
-    - hhd800.com@FJIN-098
-    - [FJIN-098]
-    - FJIN-098
-    - FJIN 098
-    - FJIN_098
-    - FJIN-098A
     """
 
     # Try bracketed first: [FJIN-098]
-    m = re.search(r"
+    m = re.search(
+        r"""
 
 \[([A-Za-z0-9]{2,10}[-_ ]?\d{2,5}[A-Za-z]?)\]
 
-", filename)
+""",
+        filename
+    )
     if m:
         return m.group(1).replace(" ", "").replace("_", "-")
 
     # General pattern: FJIN-098 or FJIN 098 or FJIN_098
-    m = re.search(r"[A-Za-z0-9]{2,10}[-_ ]?\d{2,5}[A-Za-z]?", filename)
+    m = re.search(
+        r"""[A-Za-z0-9]{2,10}[-_ ]?\d{2,5}[A-Za-z]?""",
+        filename
+    )
     if m:
         return m.group(0).replace(" ", "").replace("_", "-")
 
     return None
+
 
 
 # ------------------------------------------------------------
