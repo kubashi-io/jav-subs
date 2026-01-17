@@ -124,6 +124,7 @@ def get_english_download_href(page_url):
 def download_subtitle_from_subtitlecat(code):
     """
     Fully restored original behavior, with modern fixes.
+    Returns a dict with bytes, title, and source URL.
     """
 
     if code in SUB_CACHE:
@@ -148,7 +149,6 @@ def download_subtitle_from_subtitlecat(code):
             logger.warning(f"[SubtitleCat] No matching subtitle for {code}")
             return None
 
-        # Ensure leading slash (critical fix)
         if not page_href.startswith("/"):
             page_href = "/" + page_href
 
@@ -161,7 +161,6 @@ def download_subtitle_from_subtitlecat(code):
             logger.warning(f"[SubtitleCat] No English subtitle link for {code}")
             return None
 
-        # Ensure leading slash
         if not href.startswith("/"):
             href = "/" + href
 
@@ -174,14 +173,16 @@ def download_subtitle_from_subtitlecat(code):
             logger.warning(f"[SubtitleCat] Failed to download subtitle for {code}")
             return None
 
+        # Build metadata result
         result = {
             "bytes": r.content,
-            "title": os.path.basename(page_href),   # best guess title from page
+            "title": os.path.basename(page_href),
             "source": final_url
         }
 
         SUB_CACHE[code] = result
         return result
+
 # ------------------------------------------------------------
 # VIDEO SCANNING
 # ------------------------------------------------------------
