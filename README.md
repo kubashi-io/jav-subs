@@ -50,8 +50,8 @@ ghcr.io/caldwell-41/jav-subs:latest
 16969 → 16969
 ```
 5. Apply and start
-6. 
-7. Visit:
+
+6. Visit:
 ```
 http://your-unraid-ip:8000
 ```
