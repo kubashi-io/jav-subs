@@ -196,7 +196,11 @@ def scan_videos(root_dir, include_existing=False):
                 code = extract_jav_code(f)
 
                 base, _ = os.path.splitext(full)
-                has_sub = os.path.exists(base + ".srt")
+                has_sub = (
+                    os.path.exists(base + ".srt") or
+                    os.path.exists(base + ".en.srt")
+                )
+
 
                 results.append({
                     "file": full,
