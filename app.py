@@ -36,7 +36,7 @@ def process_single_video(video):
         video["log"].append("No subtitle found.")
         return False
 
-    srt_path = os.path.splitext(file)[0] + ".srt"
+    srt_path = os.path.splitext(file)[0] + ".en.srt"
 
     try:
         with open(srt_path, "wb") as f:
