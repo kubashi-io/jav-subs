@@ -167,37 +167,7 @@ tr.failed {
    EXPANDABLE LOG ROW
 --------------------------------------------------------- */
 .log-row {
-    transition: all 0.3s ease;
-}
-
-.log-row.collapsed {
-    display: none;
-}
-
-.log-row:not(.collapsed) {
     display: table-row;
-}
-
-/* ---------------------------------------------------------
-   COLLAPSIBLE LOG PANEL — Frosted Glass Logs
---------------------------------------------------------- */
-.logToggle {
-    padding: 8px 14px;
-    font-size: 13px;
-    border: none;
-    border-radius: 8px;
-    background: rgba(120, 60, 255, 0.25);
-    color: #f0eaff;
-    cursor: pointer;
-    margin-bottom: 4px;
-
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(180, 120, 255, 0.3);
-    transition: all 0.2s ease;
-}
-
-.logToggle:hover {
-    background: rgba(150, 80, 255, 0.35);
 }
 
 .log {
@@ -216,6 +186,28 @@ tr.failed {
     backdrop-filter: blur(14px);
     border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow: inset 0 0 12px rgba(157, 92, 255, 0.15);
+}
 
-    transition: max-height 0.3s ease, padding 0.3s ease;
+.log-line {
+    padding: 2px 0;
+}
+
+.log-info {
+    color: #8ecbff;   /* soft blue */
+}
+
+.log-success {
+    color: #7dffb2;   /* neon green */
+}
+
+.log-error {
+    color: #ff7a7a;   /* soft red */
+}
+
+.log-warning {
+    color: #ffd27f;   /* warm yellow */
+}
+
+.log-subcat {
+    color: #d5a6ff;   /* purple accent */
 }
