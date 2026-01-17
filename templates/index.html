@@ -1,92 +1,121 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-    <title>JAV Subtitle Downloader</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>Subtitle Downloader</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 16px;
+            margin-right: 10px;
+            font-size: 14px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 8px 12px;
+            border-bottom: 1px solid #ddd;
+        }
+
+        .status {
+            font-size: 20px;
+            text-align: center;
+        }
+
+        .log {
+            font-size: 12px;
+            color: #444;
+            white-space: pre-line;
+        }
+    </style>
 </head>
 <body>
 
-<div class="container">
+<h2>Subtitle Downloader</h2>
 
-    <h1>JAV Subtitle Downloader</h1>
-
-    <!-- MAIN FORM -->
-    <form method="post" action="{{ url_for('start') }}">
-
-        <label>Root video folder:</label>
-        <input type="text" name="root_dir" value="{{ root_dir }}" required>
-
-        <label>
-            <input type="checkbox" name="multithread" checked>
-            Use multithreading
-        </label>
-
-        <label>Max threads:</label>
-        <input type="number" name="max_threads" value="10" min="1" max="64">
-
-        <label>
-            <input type="checkbox" name="test_mode">
-            Test Mode (no files written)
-        </label>
-
-        <label>
-            <input type="checkbox" name="include_existing_subs">
-            Include files that already have subtitles
-        </label>
-
-        <button class="btn" type="submit">Start Download</button>
-
-        <button class="btn btn-secondary" formaction="{{ url_for('preview') }}">
-            Preview Scan
-        </button>
-    </form>
-
-    <!-- STATUS PANEL -->
-    <h2>Status</h2>
-    <div id="status-panel">
-        <p>Total: <span id="s-total">0</span></p>
-        <p>Processed: <span id="s-processed">0</span></p>
-        <p>Downloaded: <span id="s-downloaded">0</span></p>
-        <p>Failed: <span id="s-failed">0</span></p>
-    </div>
-
-    <!-- LOGS -->
-    <h2>Logs</h2>
-    <form method="get" action="{{ url_for('index') }}">
-        <button class="btn btn-secondary" type="submit">Refresh Logs</button>
-    </form>
-
-    <textarea readonly>{{ logs }}</textarea>
-
-    <!-- FOOTER -->
-    <footer class="footer">
-        Build: {{ build_sha }}
-    </footer>
-
+<div class="controls">
+    <button id="scanBtn">Scan</button>
+    <button id="downloadBtn" disabled>Download</button>
 </div>
 
-<!-- LOADING OVERLAY -->
-<div id="loading" class="loading hidden">Working...</div>
+<table id="videoTable">
+    <thead>
+        <tr>
+            <th>Video</th>
+            <th>Code</th>
+            <th>Has Subtitle</th>
+            <th>Status</th>
+            <th>Log</th>
+        </tr>
+    </thead>
+    <tbody></tbody>
+</table>
 
 <script>
-/* STATUS POLLING */
-setInterval(() => {
-    fetch("/status")
-        .then(r => r.json())
-        .then(s => {
-            document.getElementById("s-total").textContent = s.total;
-            document.getElementById("s-processed").textContent = s.processed;
-            document.getElementById("s-downloaded").textContent = s.downloaded;
-            document.getElementById("s-failed").textContent = s.failed;
-        });
-}, 1000);
+    const scanBtn = document.getElementById("scanBtn");
+    const downloadBtn = document.getElementById("downloadBtn");
+    const tableBody = document.querySelector("#videoTable tbody");
 
-/* BUTTON FEEDBACK */
-document.querySelectorAll("button").forEach(btn => {
-    btn.addEventListener("click", () => {
-        document.getElementById("loading").classList.remove("hidden");
-    });
-});
+    scanBtn.onclick = async () => {
+        const res = await fetch("/scan");
+        const data = await res.json();
+
+        tableBody.innerHTML = "";
+
+        data.videos.forEach((v, index) => {
+            const row = document.createElement("tr");
+            row.id = "row-" + index;
+
+            row.innerHTML = `
+                <td>${v.file}</td>
+                <td>${v.code || "-"}</td>
+                <td>${v.has_sub ? "Yes" : "No"}</td>
+                <td class="status" id="status-${index}"></td>
+                <td><div class="log" id="log-${index}"></div></td>
+            `;
+
+            tableBody.appendChild(row);
+        });
+
+        downloadBtn.disabled = false;
+    };
+
+    downloadBtn.onclick = async () => {
+        await fetch("/download", { method: "POST" });
+        pollStatus();
+    };
+
+    async function pollStatus() {
+        const res = await fetch("/status");
+        const data = await res.json();
+
+        data.videos.forEach((v, index) => {
+            const statusCell = document.getElementById("status-" + index);
+            const logDiv = document.getElementById("log-" + index);
+
+            if (v.status === "success") statusCell.textContent = "✔️";
+            else if (v.status === "failed") statusCell.textContent = "❌";
+            else if (v.status === "downloading") statusCell.textContent = "⏳";
+
+            logDiv.textContent = v.log.join("\n");
+        });
+
+        if (!data.finished) {
+            setTimeout(pollStatus, 800);
+        }
+    }
 </script>
 
 </body>
