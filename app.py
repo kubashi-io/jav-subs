@@ -20,7 +20,13 @@ CURRENT_STATUS = {
 # ------------------------------------------------------------
 # Wrapper for per-video processing (UI-friendly)
 # ------------------------------------------------------------
-def process_single_video(video):
+    def process_single_video(video):
+    # Skip if subtitle already exists
+    if video.get("has_sub"):
+        video["status"] = "success"
+        video["log"].append("Subtitle already exists. Skipped.")
+        return True
+        
     """
     Wraps your existing downloader logic so the UI can track:
     - status (success/failed/downloading)
