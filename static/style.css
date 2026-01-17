@@ -1,10 +1,15 @@
 /* ---------------------------------------------------------
+   IMPORT MODERN FONT
+--------------------------------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap');
+
+/* ---------------------------------------------------------
    GLOBAL LAYOUT — Centered Frosted App Container
 --------------------------------------------------------- */
 body {
     background: radial-gradient(circle at top, #1a0f2e, #0b0711 60%);
     color: #f0eaff;
-    font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    font-family: "Urbanist", sans-serif;
     margin: 0;
     padding: 40px 0;
     display: flex;
@@ -116,7 +121,7 @@ th {
     color: #e8d9ff;
     padding: 14px;
     text-align: left;
-    font-weight: 500;
+    font-weight: 600;
     border-bottom: 1px solid rgba(255, 255, 255, 0.12);
 }
 
@@ -124,6 +129,7 @@ td {
     padding: 14px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
     color: #f0eaff;
+    font-weight: 300;
 }
 
 /* ---------------------------------------------------------
