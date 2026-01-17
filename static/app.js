@@ -9,6 +9,7 @@ scanBtn.onclick = async () => {
     tableBody.innerHTML = "";
 
     data.videos.forEach((v, index) => {
+        // Main video row
         const row = document.createElement("tr");
         row.id = "row-" + index;
         row.classList.add("video-row");
@@ -21,6 +22,7 @@ scanBtn.onclick = async () => {
             <td></td>
         `;
 
+        // Log row (always visible)
         const logRow = document.createElement("tr");
         logRow.id = "log-row-" + index;
         logRow.classList.add("log-row");
@@ -33,7 +35,6 @@ scanBtn.onclick = async () => {
 
         tableBody.appendChild(row);
         tableBody.appendChild(logRow);
-
     });
 
     downloadBtn.disabled = false;
@@ -44,11 +45,34 @@ downloadBtn.onclick = async () => {
     pollStatus();
 };
 
-function toggleLog(index) {
-    const logDiv = document.getElementById("log-" + index);
-    logDiv.classList.toggle("collapsed");
+// ------------------------------------------------------------
+// Color‑coding logic for log lines
+// ------------------------------------------------------------
+function getLogClass(line) {
+    const lower = line.toLowerCase();
+
+    if (lower.includes("success") || lower.includes("saved")) {
+        return "log-success";
+    }
+    if (lower.includes("fail") || lower.includes("error")) {
+        return "log-error";
+    }
+    if (lower.includes("warning") || lower.includes("no subtitle")) {
+        return "log-warning";
+    }
+    if (
+        lower.includes("searching") ||
+        lower.includes("found subtitle") ||
+        lower.includes("source")
+    ) {
+        return "log-subcat";
+    }
+    return "log-info";
 }
 
+// ------------------------------------------------------------
+// Poll backend for status updates
+// ------------------------------------------------------------
 async function pollStatus() {
     const res = await fetch("/status");
     const data = await res.json();
@@ -60,24 +84,30 @@ async function pollStatus() {
         const logDiv = document.getElementById("log-" + index);
         const row = document.getElementById("row-" + index);
 
+        if (!statusCell || !logDiv || !row) return;
+
+        // Reset row state
         row.classList.remove("downloading", "success", "failed");
 
         if (v.status === "success") {
             statusCell.textContent = "✔️";
             row.classList.add("success");
             completed++;
-        }
-        else if (v.status === "failed") {
+        } else if (v.status === "failed") {
             statusCell.textContent = "❌";
             row.classList.add("failed");
             completed++;
-        }
-        else if (v.status === "downloading") {
+        } else if (v.status === "downloading") {
             statusCell.textContent = "⏳";
             row.classList.add("downloading");
+        } else {
+            statusCell.textContent = "";
         }
 
-        logDiv.textContent = v.log.join("\n");
+        // Render color‑coded logs
+        logDiv.innerHTML = (v.log || [])
+            .map(line => `<div class="${getLogClass(line)} log-line">${line}</div>`)
+            .join("");
     });
 
     const total = data.videos.length;
