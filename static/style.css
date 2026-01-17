@@ -1,221 +1,96 @@
-/* ---------------------------------------------------------
-   IMPORT MODERN FONT
---------------------------------------------------------- */
-@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@300;400;500;600;700&display=swap');
+const scanBtn = document.getElementById("scanBtn");
+const downloadBtn = document.getElementById("downloadBtn");
+const tableBody = document.querySelector("#videoTable tbody");
 
-/* ---------------------------------------------------------
-   GLOBAL LAYOUT — Centered Frosted App Container
---------------------------------------------------------- */
-body {
-    background: radial-gradient(circle at top, #1a0f2e, #0b0711 60%);
-    color: #f0eaff;
-    font-family: "Urbanist", sans-serif;
-    margin: 0;
-    padding: 40px 0;
-    display: flex;
-    justify-content: center;
-    backdrop-filter: blur(4px);
+scanBtn.onclick = async () => {
+    const res = await fetch("/scan");
+    const data = await res.json();
+
+    tableBody.innerHTML = "";
+
+    data.videos.forEach((v, index) => {
+        // Main video row
+        const row = document.createElement("tr");
+        row.id = "row-" + index;
+        row.classList.add("video-row");
+
+        row.innerHTML = `
+            <td>${v.file}</td>
+            <td>${v.code || "-"}</td>
+            <td>${v.has_sub ? "Yes" : "No"}</td>
+            <td class="status" id="status-${index}"></td>
+            <td>
+                <button class="logToggle" onclick="toggleLog(${index})">Show Log</button>
+            </td>
+        `;
+
+        // Log row directly under main row
+        const logRow = document.createElement("tr");
+        logRow.id = "log-row-" + index;
+        logRow.classList.add("log-row", "collapsed");
+
+        logRow.innerHTML = `
+            <td colspan="5">
+                <div class="log" id="log-${index}"></div>
+            </td>
+        `;
+
+        tableBody.appendChild(row);
+        tableBody.appendChild(logRow);
+    });
+
+    downloadBtn.disabled = false;
+};
+
+downloadBtn.onclick = async () => {
+    await fetch("/download", { method: "POST" });
+    pollStatus();
+};
+
+function toggleLog(index) {
+    const logRow = document.getElementById("log-row-" + index);
+    logRow.classList.toggle("collapsed");
 }
 
-/* Main frosted-glass container */
-#app-container {
-    width: 90%;
-    max-width: 1100px;
-    padding: 40px 50px;
-    border-radius: 20px;
+async function pollStatus() {
+    const res = await fetch("/status");
+    const data = await res.json();
 
-    background: rgba(255, 255, 255, 0.06);
-    backdrop-filter: blur(18px) saturate(180%);
-    -webkit-backdrop-filter: blur(18px) saturate(180%);
+    let completed = 0;
 
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 0 40px rgba(157, 92, 255, 0.25);
-}
+    data.videos.forEach((v, index) => {
+        const statusCell = document.getElementById("status-" + index);
+        const logDiv = document.getElementById("log-" + index);
+        const row = document.getElementById("row-" + index);
 
-/* Headings */
-h2 {
-    color: #d9b7ff;
-    margin-bottom: 30px;
-    font-weight: 600;
-    text-align: center;
-    letter-spacing: 0.6px;
-}
+        if (!statusCell || !logDiv || !row) return;
 
-/* Controls row */
-.controls {
-    margin-bottom: 20px;
-}
+        // Reset row state
+        row.classList.remove("downloading", "success", "failed");
 
-/* ---------------------------------------------------------
-   BUTTONS — Glassy Neon Buttons
---------------------------------------------------------- */
-button {
-    padding: 12px 24px;
-    margin-right: 12px;
-    font-size: 15px;
-    border: none;
-    border-radius: 10px;
-    cursor: pointer;
+        if (v.status === "success") {
+            statusCell.textContent = "✔️";
+            row.classList.add("success");
+            completed++;
+        } else if (v.status === "failed") {
+            statusCell.textContent = "❌";
+            row.classList.add("failed");
+            completed++;
+        } else if (v.status === "downloading") {
+            statusCell.textContent = "⏳";
+            row.classList.add("downloading");
+        } else {
+            statusCell.textContent = "";
+        }
 
-    background: rgba(120, 60, 255, 0.25);
-    color: #f5eaff;
+        logDiv.textContent = (v.log || []).join("\n");
+    });
 
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
+    const total = data.videos.length;
+    const percent = total === 0 ? 0 : (completed / total) * 100;
+    document.getElementById("progressBar").style.width = percent + "%";
 
-    border: 1px solid rgba(180, 120, 255, 0.3);
-    transition: all 0.25s ease;
-    box-shadow: 0 0 12px rgba(157, 92, 255, 0.35);
-}
-
-button:hover {
-    transform: translateY(-2px);
-    background: rgba(150, 80, 255, 0.35);
-    box-shadow: 0 0 18px rgba(157, 92, 255, 0.55);
-}
-
-button:disabled {
-    background: rgba(80, 60, 120, 0.2);
-    color: #bba8d8;
-    cursor: not-allowed;
-    box-shadow: none;
-}
-
-/* ---------------------------------------------------------
-   PROGRESS BAR — Frosted Neon Bar
---------------------------------------------------------- */
-#progressContainer {
-    width: 100%;
-    height: 18px;
-    background: rgba(255, 255, 255, 0.08);
-    border-radius: 12px;
-    margin-bottom: 30px;
-    overflow: hidden;
-
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-#progressBar {
-    height: 100%;
-    width: 0%;
-    background: linear-gradient(90deg, #7a3cff, #c08cff);
-    transition: width 0.3s ease;
-    box-shadow: 0 0 20px rgba(157, 92, 255, 0.6);
-}
-
-/* ---------------------------------------------------------
-   TABLE — Floating Glass Table
---------------------------------------------------------- */
-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 20px;
-
-    background: rgba(255, 255, 255, 0.05);
-    backdrop-filter: blur(14px);
-    border-radius: 14px;
-    overflow: hidden;
-
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: 0 0 25px rgba(157, 92, 255, 0.2);
-}
-
-th {
-    background: rgba(255, 255, 255, 0.08);
-    color: #e8d9ff;
-    padding: 14px;
-    text-align: left;
-    font-weight: 600;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-}
-
-td {
-    padding: 14px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    color: #f0eaff;
-    font-weight: 300;
-}
-
-/* ---------------------------------------------------------
-   STATUS ICONS
---------------------------------------------------------- */
-.status {
-    font-size: 22px;
-    text-align: center;
-}
-
-/* ---------------------------------------------------------
-   ROW HIGHLIGHTING — Glass Glow States
---------------------------------------------------------- */
-tr.downloading {
-    background: rgba(120, 60, 255, 0.12);
-    box-shadow: inset 0 0 12px rgba(157, 92, 255, 0.25);
-}
-
-tr.success {
-    background: rgba(0, 255, 140, 0.12);
-    box-shadow: inset 0 0 12px rgba(0, 255, 140, 0.25);
-}
-
-tr.failed {
-    background: rgba(255, 80, 80, 0.12);
-    box-shadow: inset 0 0 12px rgba(255, 80, 80, 0.25);
-}
-
-/* ---------------------------------------------------------
-   EXPANDABLE LOG ROW
---------------------------------------------------------- */
-.log-row {
-    transition: all 0.3s ease;
-}
-
-.log-row.collapsed {
-    display: none;
-}
-
-.log-row:not(.collapsed) {
-    display: table-row;
-}
-
-/* ---------------------------------------------------------
-   COLLAPSIBLE LOG PANEL — Frosted Glass Logs
---------------------------------------------------------- */
-.logToggle {
-    padding: 8px 14px;
-    font-size: 13px;
-    border: none;
-    border-radius: 8px;
-    background: rgba(120, 60, 255, 0.25);
-    color: #f0eaff;
-    cursor: pointer;
-    margin-bottom: 4px;
-
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(180, 120, 255, 0.3);
-    transition: all 0.2s ease;
-}
-
-.logToggle:hover {
-    background: rgba(150, 80, 255, 0.35);
-}
-
-.log {
-    font-size: 13px;
-    color: #e8d9ff;
-    white-space: pre-line;
-
-    background: rgba(255, 255, 255, 0.06);
-    padding: 14px;
-    border-radius: 10px;
-    margin-top: 4px;
-
-    max-height: 300px;
-    overflow-y: auto;
-
-    backdrop-filter: blur(14px);
-    border: 1px solid rgba(255, 255, 255, 0.12);
-    box-shadow: inset 0 0 12px rgba(157, 92, 255, 0.15);
-
-    transition: max-height 0.3s ease, padding 0.3s ease;
+    if (!data.finished) {
+        setTimeout(pollStatus, 800);
+    }
 }
