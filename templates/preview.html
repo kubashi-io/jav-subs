@@ -12,18 +12,31 @@
 
     <p>Folder: {{ root_dir }}</p>
 
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <button type="button" class="filter-btn" data-filter="all">All</button>
+        <button type="button" class="filter-btn" data-filter="missing">Missing Only</button>
+        <button type="button" class="filter-btn" data-filter="existing">Existing Only</button>
+    </div>
+
     <table class="preview-table">
         <tr>
             <th>File</th>
             <th>Code</th>
-            <th>Has Subtitle</th>
+            <th>Status</th>
         </tr>
 
         {% for v in files %}
-        <tr>
+        <tr class="preview-row {% if v.has_sub %}has-sub{% else %}missing-sub{% endif %}">
             <td>{{ v.file }}</td>
             <td>{{ v.code }}</td>
-            <td>{{ "Yes" if v.has_sub else "No" }}</td>
+            <td>
+                {% if v.has_sub %}
+                    <span class="badge badge-ok">Subtitle already exists</span>
+                {% else %}
+                    <span class="badge badge-missing">Missing subtitle</span>
+                {% endif %}
+            </td>
         </tr>
         {% endfor %}
     </table>
@@ -37,6 +50,25 @@
     </footer>
 
 </div>
+
+<script>
+document.querySelectorAll(".filter-btn").forEach(btn => {
+    btn.addEventListener("click", () => {
+        const filter = btn.dataset.filter;
+        const rows = document.querySelectorAll(".preview-row");
+
+        rows.forEach(row => {
+            if (filter === "all") {
+                row.style.display = "";
+            } else if (filter === "missing") {
+                row.style.display = row.classList.contains("missing-sub") ? "" : "none";
+            } else if (filter === "existing") {
+                row.style.display = row.classList.contains("has-sub") ? "" : "none";
+            }
+        });
+    });
+});
+</script>
 
 </body>
 </html>
