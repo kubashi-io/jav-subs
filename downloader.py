@@ -53,7 +53,7 @@ def safe_get(url, retries=3, timeout=10):
     for attempt in range(retries):
         try:
             r = requests.get(url, timeout=timeout)
-            if r.statuscode == 200:
+            if r.status_code == 200:  # <-- fixed here
                 return r
         except Exception:
             pass
