@@ -45,6 +45,30 @@ downloadBtn.onclick = async () => {
     pollStatus();
 };
 
+document.getElementById("hideSubsToggle").addEventListener("change", () => {
+    applyHideFilter();
+});
+
+function applyHideFilter() {
+    const hide = document.getElementById("hideSubsToggle").checked;
+
+    const rows = document.querySelectorAll(".video-row");
+    rows.forEach(row => {
+        const index = row.id.replace("row-", "");
+        const hasSub = row.querySelector("td:nth-child(3)").textContent === "Yes";
+
+        const logRow = document.getElementById("log-row-" + index);
+
+        if (hide && hasSub) {
+            row.style.display = "none";
+            logRow.style.display = "none";
+        } else {
+            row.style.display = "table-row";
+            logRow.style.display = "table-row";
+        }
+    });
+}
+
 // ------------------------------------------------------------
 // Color‑coding logic for log lines
 // ------------------------------------------------------------
