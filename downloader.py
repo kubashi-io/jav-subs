@@ -47,6 +47,8 @@ def extract_jav_code(filename):
         return m.group(0).replace(" ", "").replace("_", "-")
 
     return None
+
+
 # ------------------------------------------------------------
 # SAFE NETWORK WRAPPER
 # ------------------------------------------------------------
