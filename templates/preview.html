@@ -1,0 +1,42 @@
+<!doctype html>
+<html>
+<head>
+    <title>Scan Preview</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+<div class="container">
+
+    <h1>Scan Preview</h1>
+
+    <p>Folder: {{ root_dir }}</p>
+
+    <table class="preview-table">
+        <tr>
+            <th>File</th>
+            <th>Code</th>
+            <th>Has Subtitle</th>
+        </tr>
+
+        {% for v in files %}
+        <tr>
+            <td>{{ v.file }}</td>
+            <td>{{ v.code }}</td>
+            <td>{{ "Yes" if v.has_sub else "No" }}</td>
+        </tr>
+        {% endfor %}
+    </table>
+
+    <form method="get" action="{{ url_for('index') }}">
+        <button class="btn btn-secondary">Back</button>
+    </form>
+
+    <footer class="footer">
+        Build: {{ build_sha }}
+    </footer>
+
+</div>
+
+</body>
+</html>
