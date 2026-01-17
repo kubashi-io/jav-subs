@@ -5,33 +5,33 @@
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-<div id="app-container">
+  <div id="app-container">
+    <h2>Subtitle Downloader</h2>
 
-<h2>Subtitle Downloader</h2>
+    <div id="progressContainer">
+      <div id="progressBar"></div>
+    </div>
 
-<div id="progressContainer">
-    <div id="progressBar"></div>
-</div>
+    <div class="controls">
+      <button id="scanBtn">Scan</button>
+      <button id="downloadBtn" disabled>Download</button>
+    </div>
 
-<div class="controls">
-    <button id="scanBtn">Scan</button>
-    <button id="downloadBtn" disabled>Download</button>
-</div>
-
-<table id="videoTable">
-    <thead>
+    <table id="videoTable">
+      <thead>
         <tr>
-            <th>Video</th>
-            <th>Code</th>
-            <th>Has Subtitle</th>
-            <th>Status</th>
-            <th>Log</th>
+          <th>Video</th>
+          <th>Code</th>
+          <th>Has Subtitle</th>
+          <th>Status</th>
+          <th>Log</th>
         </tr>
-    </thead>
-    <tbody></tbody>
-</table>
-</div>
-<script src="/static/app.js"></script>
-    
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="/static/app.js"></script>
 </body>
+
 </html>
