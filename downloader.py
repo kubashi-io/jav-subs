@@ -2,14 +2,20 @@ import os
 import time
 import threading
 import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def extract_jav_code(filename):
     """
-    Extract a simple JAV-style code like ABC-123 from the filename.
+    Extract a JAV-style code like FJIN-098 from the filename.
+    Handles prefixes like 'hhd800.com@FJIN-098'.
     """
-    match = re.search(r"[A-Za-z]{2,5}-\d{2,5}", filename)
-    return match.group(0) if match else None
+    match = re.search(r"[A-Za-z0-9]{2,10}-\d{2,5}", filename)
+    code = match.group(0) if match else None
+    logger.debug(f"Extracted code from '{filename}': {code}")
+    return code
 
 
 def scan_videos(root_dir, include_existing=False):
@@ -20,11 +26,8 @@ def scan_videos(root_dir, include_existing=False):
         "code": extracted_code or None,
         "has_sub": True/False
     }
-
-    include_existing:
-        - False = return all files, but downloader will skip existing subs
-        - True  = return all files AND downloader will process all
     """
+    logger.info(f"Scanning videos in: {root_dir}, include_existing={include_existing}")
     results = []
 
     for root, dirs, files in os.walk(root_dir):
@@ -42,33 +45,40 @@ def scan_videos(root_dir, include_existing=False):
                     "has_sub": has_sub
                 })
 
+    logger.info(f"Scan complete. Found {len(results)} video files.")
     return results
 
 
 def process_video(video, test_mode, status):
     """
     Process a single video:
-    - Skip if it already has subtitles (unless include_existing was enabled earlier)
+    - Skip if it already has subtitles (unless include_existing was handled earlier)
     - In test mode, simulate success without writing files
     - Otherwise, perform the real download (placeholder here)
     """
-
-    # Safety: skip if subtitles already exist
     if video.get("has_sub"):
+        logger.info(f"Skipping (subtitle exists): {video['file']}")
         return
 
     status["processed"] += 1
+    logger.info(f"Processing: {video['file']} (test_mode={test_mode})")
 
-    if test_mode:
-        # Simulate a successful "download"
+    try:
+        if test_mode:
+            # Simulate a successful "download"
+            time.sleep(0.1)
+            status["downloaded"] += 1
+            logger.info(f"[TEST MODE] Marked as downloaded: {video['file']}")
+            return
+
+        # TODO: replace this with real subtitle download logic
+        time.sleep(1)
         status["downloaded"] += 1
-        return
+        logger.info(f"Downloaded subtitles for: {video['file']}")
 
-    # TODO: replace this with real subtitle download logic
-    # Simulate network / processing delay
-    time.sleep(1)
-
-    status["downloaded"] += 1
+    except Exception as e:
+        status["failed"] += 1
+        logger.exception(f"Failed processing {video['file']}: {e}")
 
 
 def run_downloader(
@@ -86,7 +96,6 @@ def run_downloader(
     - Processes remaining videos (optionally multithreaded)
     - Updates the shared status dict
     """
-
     if status is None:
         status = {
             "total": 0,
@@ -97,20 +106,27 @@ def run_downloader(
             "start_time": None
         }
 
-    # Scan all videos
+    logger.info(
+        f"run_downloader called with root_dir={root_dir}, "
+        f"use_multithreading={use_multithreading}, max_threads={max_threads}, "
+        f"test_mode={test_mode}, include_existing={include_existing}"
+    )
+
     videos = scan_videos(root_dir, include_existing=include_existing)
 
-    # Filter out videos that already have subtitles unless toggle is ON
     if not include_existing:
+        before = len(videos)
         videos = [v for v in videos if not v["has_sub"]]
+        logger.info(f"Filtered existing subtitles: {before} → {len(videos)} to process")
 
     status["total"] = len(videos)
 
     if not videos:
+        logger.info("No videos to process after filtering. Exiting run_downloader.")
         return
 
-    # Multithreaded mode
     if use_multithreading:
+        logger.info("Starting multithreaded processing")
         threads = []
 
         for v in videos:
@@ -118,17 +134,21 @@ def run_downloader(
             threads.append(t)
             t.start()
 
-            # Limit concurrency
             if len(threads) >= max_threads:
                 for t in threads:
                     t.join()
                 threads = []
 
-        # Join remaining threads
         for t in threads:
             t.join()
 
-    # Single-threaded mode
     else:
+        logger.info("Starting single-threaded processing")
         for v in videos:
             process_video(v, test_mode, status)
+
+    logger.info(
+        f"run_downloader finished. total={status['total']}, "
+        f"processed={status['processed']}, downloaded={status['downloaded']}, "
+        f"failed={status['failed']}"
+    )

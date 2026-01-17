@@ -1,5 +1,8 @@
 import os
 import time
+import logging
+from logging.handlers import RotatingFileHandler
+
 from flask import Flask, render_template, request, redirect, url_for, jsonify
 from downloader import run_downloader, scan_videos
 
@@ -16,6 +19,29 @@ STATUS = {
     "running": False,
     "start_time": None
 }
+
+
+def setup_logging():
+    os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True) if os.path.dirname(LOG_FILE) else None
+
+    handler = RotatingFileHandler(
+        LOG_FILE,
+        maxBytes=5 * 1024 * 1024,  # 5 MB
+        backupCount=3
+    )
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s")
+    handler.setFormatter(formatter)
+
+    root_logger = logging.getLogger()
+    root_logger.setLevel(logging.INFO)
+
+    # Avoid adding multiple handlers if reloaded
+    if not any(isinstance(h, RotatingFileHandler) for h in root_logger.handlers):
+        root_logger.addHandler(handler)
+
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 
 @app.route("/", methods=["GET"])
@@ -40,6 +66,8 @@ def preview():
     root_dir = request.form.get("root_dir")
     include_existing = request.form.get("include_existing_subs") == "on"
 
+    logger.info(f"Preview requested for root_dir={root_dir}, include_existing={include_existing}")
+
     files = scan_videos(root_dir, include_existing=include_existing)
 
     return render_template(
@@ -58,6 +86,11 @@ def start():
     test_mode = request.form.get("test_mode") == "on"
     include_existing = request.form.get("include_existing_subs") == "on"
 
+    logger.info(
+        f"Download started: root_dir={root_dir}, multithread={multithread}, "
+        f"max_threads={max_threads}, test_mode={test_mode}, include_existing={include_existing}"
+    )
+
     STATUS.update({
         "total": 0,
         "processed": 0,
@@ -67,16 +100,21 @@ def start():
         "start_time": time.time()
     })
 
-    run_downloader(
-        root_dir,
-        use_multithreading=multithread,
-        max_threads=max_threads,
-        test_mode=test_mode,
-        include_existing=include_existing,
-        status=STATUS
-    )
+    try:
+        run_downloader(
+            root_dir,
+            use_multithreading=multithread,
+            max_threads=max_threads,
+            test_mode=test_mode,
+            include_existing=include_existing,
+            status=STATUS
+        )
+    except Exception as e:
+        logger.exception(f"Error during download run: {e}")
+    finally:
+        STATUS["running"] = False
+        logger.info("Download run finished")
 
-    STATUS["running"] = False
     return redirect(url_for("index"))
 
 
@@ -88,7 +126,3 @@ def status():
 @app.route("/health")
 def health():
     return "OK", 200
-
-
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=16969)
