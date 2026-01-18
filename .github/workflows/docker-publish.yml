@@ -5,6 +5,8 @@ on:
     branches:
       - main
       - second-provider
+    tags:
+      - "v*"
 
 jobs:
   build-and-push:
@@ -37,5 +39,5 @@ jobs:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:${{ github.ref_name }}
-            ghcr.io/${{ github.repository }}:latest
+            ${{ steps.vars.outputs.image }}:${{ github.ref_name }}
+            ${{ steps.vars.outputs.image }}:${{ github.sha }}
