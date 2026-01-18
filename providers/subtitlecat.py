@@ -1,31 +1,65 @@
 import requests
 from bs4 import BeautifulSoup
 import time
+import random
 import re
 import os
 
 BASE_URL = "https://www.subtitlecat.com"
-NET_SEM = None  # handled in downloader.py
 
 
-def safe_get(url, retries=3, timeout=10):
-    for attempt in range(retries):
+# ------------------------------------------------------------
+# Utility: Cloudflare challenge detection
+# ------------------------------------------------------------
+def looks_like_cloudflare(html):
+    if not html:
+        return False
+    text = html.lower()
+    return (
+        "just a moment" in text or
+        "cloudflare" in text or
+        "checking your browser" in text
+    )
+
+
+# ------------------------------------------------------------
+# Safe GET with retry + backoff + Cloudflare detection
+# ------------------------------------------------------------
+def safe_get(url, log, retries=5, timeout=10):
+    for attempt in range(1, retries + 1):
         try:
             r = requests.get(url, timeout=timeout)
+            html = r.text if hasattr(r, "text") else ""
+
+            # Cloudflare challenge
+            if looks_like_cloudflare(html):
+                log.append(f"[SubCat] Cloudflare challenge detected (attempt {attempt})")
+                time.sleep(random.uniform(1.2, 2.0))
+                continue
+
             if r.status_code == 200:
                 return r
-        except Exception:
-            pass
-        time.sleep(1)
+
+            log.append(f"[SubCat] HTTP {r.status_code} (attempt {attempt})")
+
+        except Exception as e:
+            log.append(f"[SubCat] Request error: {e} (attempt {attempt})")
+
+        # Backoff
+        time.sleep(random.uniform(0.8, 1.6))
+
+    log.append("[SubCat] Request failed after retries")
     return None
 
 
+# ------------------------------------------------------------
+# Search results page
+# ------------------------------------------------------------
 def find_best_result_href(search_url, code, log):
     log.append(f"[SubCat] Searching: {search_url}")
 
-    r = safe_get(search_url)
+    r = safe_get(search_url, log)
     if not r:
-        log.append("[SubCat] Request failed")
         return None
 
     soup = BeautifulSoup(r.text, "lxml")
@@ -35,7 +69,6 @@ def find_best_result_href(search_url, code, log):
         return None
 
     rows = table.find("tbody").find_all("tr")
-
     best_href = None
     most_downloads = 0
 
@@ -48,7 +81,6 @@ def find_best_result_href(search_url, code, log):
             continue
 
         title = a.text.strip()
-
         if code.lower() not in title.lower():
             continue
 
@@ -72,12 +104,14 @@ def find_best_result_href(search_url, code, log):
     return best_href
 
 
+# ------------------------------------------------------------
+# English subtitle link
+# ------------------------------------------------------------
 def get_english_download_href(page_url, log):
     log.append(f"[SubCat] Loading subtitle page: {page_url}")
 
-    r = safe_get(page_url)
+    r = safe_get(page_url, log)
     if not r:
-        log.append("[SubCat] Failed to load subtitle page")
         return None
 
     soup = BeautifulSoup(r.text, "lxml")
@@ -92,12 +126,22 @@ def get_english_download_href(page_url, log):
     return href
 
 
+# ------------------------------------------------------------
+# Main SubtitleCat logic (now hardened)
+# ------------------------------------------------------------
 def get_subtitle(jav_code, log):
     search_url = f"{BASE_URL}/index.php?search={jav_code}"
 
-    # 1. Find best result
-    page_href = find_best_result_href(search_url, jav_code, log)
+    # Retry search up to 3 times
+    for attempt in range(1, 4):
+        log.append(f"[SubCat] Search attempt {attempt}/3")
+        page_href = find_best_result_href(search_url, jav_code, log)
+        if page_href:
+            break
+        time.sleep(random.uniform(1.0, 2.0))
+
     if not page_href:
+        log.append("[SubCat] Failed to find results after retries")
         return None
 
     if not page_href.startswith("/"):
@@ -105,9 +149,16 @@ def get_subtitle(jav_code, log):
 
     page_url = BASE_URL + page_href
 
-    # 2. Get English subtitle link
-    href = get_english_download_href(page_url, log)
+    # Retry English link up to 3 times
+    for attempt in range(1, 4):
+        log.append(f"[SubCat] English link attempt {attempt}/3")
+        href = get_english_download_href(page_url, log)
+        if href:
+            break
+        time.sleep(random.uniform(1.0, 2.0))
+
     if not href:
+        log.append("[SubCat] Failed to get English subtitle link after retries")
         return None
 
     if not href.startswith("/"):
@@ -116,16 +167,18 @@ def get_subtitle(jav_code, log):
     final_url = BASE_URL + href
     log.append(f"[SubCat] Downloading: {final_url}")
 
-    # 3. Download subtitle
-    r = safe_get(final_url)
-    if not r:
-        log.append("[SubCat] Failed to download subtitle")
-        return None
+    # Retry download up to 3 times
+    for attempt in range(1, 4):
+        log.append(f"[SubCat] Download attempt {attempt}/3")
+        r = safe_get(final_url, log)
+        if r:
+            log.append("[SubCat] Download successful")
+            return {
+                "content": r.content,
+                "source": final_url,
+                "provider": "subtitlecat"
+            }
+        time.sleep(random.uniform(1.0, 2.0))
 
-    log.append("[SubCat] Download successful")
-
-    return {
-        "content": r.content,
-        "source": final_url,
-        "provider": "subtitlecat"
-    }
+    log.append("[SubCat] Failed to download subtitle after retries")
+    return None
